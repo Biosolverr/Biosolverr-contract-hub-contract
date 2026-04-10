@@ -1,0 +1,81 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: LicenseNFT
+    network: base-sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000"  # заменить после деплоя
+      abi: LicenseNFT
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - License
+      abis:
+        - name: LicenseNFT
+          file: ./abis/LicenseNFT.json
+      eventHandlers:
+        - event: LicenseMinted(indexed address,indexed uint256,indexed bytes32,uint256)
+          handler: handleLicenseMinted
+        - event: LicenseExtended(indexed uint256,uint256)
+          handler: handleLicenseExtended
+        - event: LicenseRevoked(indexed uint256)
+          handler: handleLicenseRevoked
+      file: ./src/licenseNFT.ts
+
+  - kind: ethereum
+    name: ContractMarketplace
+    network: base-sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000"  # заменить после деплоя
+      abi: ContractMarketplace
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Listing
+        - ContractRegistry
+      abis:
+        - name: ContractMarketplace
+          file: ./abis/ContractMarketplace.json
+      eventHandlers:
+        - event: ContractListed(indexed uint256,indexed address,address,uint256,string)
+          handler: handleContractListed
+        - event: LicensePurchased(indexed uint256,indexed address,indexed address,uint256,uint256)
+          handler: handleLicensePurchased
+        - event: ListingDelisted(indexed uint256)
+          handler: handleListingDelisted
+        - event: ContractRegistered(indexed bytes32,indexed address,string,string)
+          handler: handleContractRegistered
+        - event: ContractVerified(indexed bytes32,indexed address)
+          handler: handleContractVerified
+      file: ./src/marketplace.ts
+
+  - kind: ethereum
+    name: ContractFactory
+    network: base-sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000"  # заменить после деплоя
+      abi: ContractFactory
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Deployment
+      abis:
+        - name: ContractFactory
+          file: ./abis/ContractFactory.json
+      eventHandlers:
+        - event: ContractDeployed(indexed address,indexed bytes32,indexed address,uint256)
+          handler: handleContractDeployed
+        - event: ImplementationRegistered(indexed bytes32,indexed address,uint256,string)
+          handler: handleImplementationRegistered
+      file: ./src/factory.ts
