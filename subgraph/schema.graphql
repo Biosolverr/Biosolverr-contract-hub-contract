@@ -1,0 +1,55 @@
+type License @entity {
+  id: ID!                      # tokenId
+  owner: Bytes!
+  contractId: Bytes!
+  expiration: BigInt!          # 0 = бессрочная
+  metadataURI: String!
+  valid: Boolean!
+  mintedAt: BigInt!
+  mintTx: Bytes!
+}
+
+type Listing @entity {
+  id: ID!                      # listingId
+  seller: Bytes!
+  contractAddress: Bytes!
+  price: BigInt!
+  metadata: String!
+  active: Boolean!
+  tokenId: BigInt              # заполняется после покупки
+  buyer: Bytes                 # заполняется после покупки
+  listedAt: BigInt!
+  purchasedAt: BigInt
+}
+
+type ContractRegistry @entity {
+  id: ID!                      # bytes32 contractId
+  author: Bytes!
+  name: String!
+  symbol: String!
+  version: String!
+  licensePrice: BigInt!
+  verified: Boolean!
+  isActive: Boolean!
+  totalSales: BigInt!
+  registeredAt: BigInt!
+}
+
+type Deployment @entity {
+  id: ID!                      # clone address
+  contractId: Bytes!
+  deployer: Bytes!
+  version: BigInt!
+  deployedAt: BigInt!
+  txHash: Bytes!
+}
+
+type Implementation @entity {
+  id: ID!                      # contractId + version
+  contractId: Bytes!
+  address: Bytes!
+  version: BigInt!
+  metadata: String!
+  deprecated: Boolean!
+  registeredAt: BigInt!
+}
