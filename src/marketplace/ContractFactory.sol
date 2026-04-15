@@ -9,19 +9,29 @@ import {ILicenseNFT} from "../interfaces/ILicenseNFT.sol";
 contract ContractFactory is Ownable, IContractFactory {
     using Clones for address;
 
+    // ─── Errors ───────────────────────────────────────────────────────────────
+
+    error LicenseNotValid(uint256 tokenId);
+    error LicenseAlreadyUsed(uint256 tokenId);
+    error NotLicenseOwner(uint256 tokenId);
+    error LicenseMismatch(bytes32 expected, bytes32 actual);
+
+    error ImplementationNotFound();
+    error InvalidImplementationAddress();
+    error ArrayLengthMismatch();
+    error InitializationFailed();
+
     // ─── Storage ──────────────────────────────────────────────────────────────
 
     struct ImplVersion {
         address addr;
-        string  metadata;
-        bool    deprecated;
+        string metadata;
+        bool deprecated;
     }
 
-    mapping(bytes32 => ImplVersion[])                        private _versions;
-    mapping(address => bytes32)                              private _instanceContractId;
-    mapping(address => mapping(bytes32 => address[]))        private _userDeployments;
-
-    /// @notice FIX 3: каждая лицензия используется только один раз
+    mapping(bytes32 => ImplVersion[]) private _versions;
+    mapping(address => bytes32) private _instanceContractId;
+    mapping(address => mapping(bytes32 => address[])) private _userDeployments;
     mapping(uint256 => bool) private _licenseUsed;
 
     ILicenseNFT public immutable licenseNFT;
@@ -41,12 +51,17 @@ contract ContractFactory is Ownable, IContractFactory {
         string calldata metadata
     ) external override onlyOwner {
         if (implementation == address(0)) revert InvalidImplementationAddress();
+
         uint256 ver = _versions[contractId].length;
-        _versions[contractId].push(ImplVersion({
-            addr:       implementation,
-            metadata:   metadata,
-            deprecated: false
-        }));
+
+        _versions[contractId].push(
+            ImplVersion({
+                addr: implementation,
+                metadata: metadata,
+                deprecated: false
+            })
+        );
+
         emit ImplementationRegistered(contractId, implementation, ver, metadata);
     }
 
@@ -56,32 +71,47 @@ contract ContractFactory is Ownable, IContractFactory {
         string calldata metadata
     ) external override onlyOwner {
         if (newImplementation == address(0)) revert InvalidImplementationAddress();
+
         uint256 ver = _versions[contractId].length;
-        _versions[contractId].push(ImplVersion({
-            addr:       newImplementation,
-            metadata:   metadata,
-            deprecated: false
-        }));
+
+        _versions[contractId].push(
+            ImplVersion({
+                addr: newImplementation,
+                metadata: metadata,
+                deprecated: false
+            })
+        );
+
         emit ImplementationUpgraded(contractId, ver, newImplementation);
     }
 
     function deprecateImplementation(bytes32 contractId, uint256 version)
-        external override onlyOwner
+        external
+        override
+        onlyOwner
     {
         ImplVersion[] storage vers = _versions[contractId];
-        if (version >= vers.length || vers[version].addr == address(0))
+
+        if (version >= vers.length || vers[version].addr == address(0)) {
             revert ImplementationNotFound();
+        }
+
         vers[version].deprecated = true;
+
         emit ImplementationDeprecated(contractId, version);
     }
 
     // ─── Deployment ───────────────────────────────────────────────────────────
 
     function deployContract(bytes32 contractId, uint256 licenseTokenId)
-        external override returns (address clone)
+        external
+        override
+        returns (address clone)
     {
         _checkLicense(contractId, licenseTokenId);
+
         uint256 ver = _activeVersion(contractId);
+
         clone = _deploy(contractId, ver, licenseTokenId);
     }
 
@@ -91,10 +121,17 @@ contract ContractFactory is Ownable, IContractFactory {
         uint256 version
     ) external override returns (address clone) {
         _checkLicense(contractId, licenseTokenId);
+
         ImplVersion[] storage vers = _versions[contractId];
-        if (version >= vers.length || vers[version].addr == address(0))
+
+        if (version >= vers.length || vers[version].addr == address(0)) {
             revert ImplementationNotFound();
-        if (vers[version].deprecated) revert ImplementationNotFound();
+        }
+
+        if (vers[version].deprecated) {
+            revert ImplementationNotFound();
+        }
+
         clone = _deploy(contractId, version, licenseTokenId);
     }
 
@@ -102,11 +139,17 @@ contract ContractFactory is Ownable, IContractFactory {
         bytes32[] calldata contractIds,
         uint256[] calldata licenseTokenIds
     ) external override returns (address[] memory clones) {
-        if (contractIds.length != licenseTokenIds.length) revert ArrayLengthMismatch();
+        if (contractIds.length != licenseTokenIds.length) {
+            revert ArrayLengthMismatch();
+        }
+
         clones = new address[](contractIds.length);
+
         for (uint256 i; i < contractIds.length; ++i) {
             _checkLicense(contractIds[i], licenseTokenIds[i]);
+
             uint256 ver = _activeVersion(contractIds[i]);
+
             clones[i] = _deploy(contractIds[i], ver, licenseTokenIds[i]);
         }
     }
@@ -114,7 +157,10 @@ contract ContractFactory is Ownable, IContractFactory {
     // ─── Views ────────────────────────────────────────────────────────────────
 
     function getImplementationInfo(bytes32 contractId, uint256 version)
-        external view override returns (
+        external
+        view
+        override
+        returns (
             address implementation,
             uint256 versionNum,
             bool isActive,
@@ -122,37 +168,56 @@ contract ContractFactory is Ownable, IContractFactory {
         )
     {
         ImplVersion[] storage vers = _versions[contractId];
-        if (version >= vers.length) revert ImplementationNotFound();
+
+        if (version >= vers.length) {
+            revert ImplementationNotFound();
+        }
+
         ImplVersion storage v = vers[version];
+
         return (v.addr, version, !v.deprecated, v.metadata);
     }
 
     function getActiveImplementation(bytes32 contractId)
-        external view override returns (
+        external
+        view
+        override
+        returns (
             address implementation,
             uint256 version,
             string memory metadata
         )
     {
         version = _activeVersion(contractId);
+
         ImplVersion storage v = _versions[contractId][version];
+
         return (v.addr, version, v.metadata);
     }
 
     function getInstanceContractId(address instance)
-        external view override returns (bytes32)
+        external
+        view
+        override
+        returns (bytes32)
     {
         return _instanceContractId[instance];
     }
 
     function getUserDeployments(address user, bytes32 contractId)
-        external view override returns (address[] memory)
+        external
+        view
+        override
+        returns (address[] memory)
     {
         return _userDeployments[user][contractId];
     }
 
     function isLicenseUsed(uint256 tokenId)
-        external view override returns (bool)
+        external
+        view
+        override
+        returns (bool)
     {
         return _licenseUsed[tokenId];
     }
@@ -160,55 +225,73 @@ contract ContractFactory is Ownable, IContractFactory {
     // ─── Internal ─────────────────────────────────────────────────────────────
 
     function _checkLicense(bytes32 contractId, uint256 tokenId) internal {
-        // Проверяем владельца
-        (bool ok, bytes memory data) = address(licenseNFT).staticcall(
-            abi.encodeWithSignature("ownerOf(uint256)", tokenId)
-        );
+        (bool ok, bytes memory data) =
+            address(licenseNFT).staticcall(
+                abi.encodeWithSignature("ownerOf(uint256)", tokenId)
+            );
+
         if (!ok) revert LicenseNotValid(tokenId);
+
         address tokenOwner = abi.decode(data, (address));
-        if (tokenOwner != msg.sender) revert NotLicenseOwner(tokenId);
 
-        // Проверяем валидность
-        if (!licenseNFT.isLicenseValid(tokenId)) revert LicenseNotValid(tokenId);
+        if (tokenOwner != msg.sender) {
+            revert NotLicenseOwner(tokenId);
+        }
 
-        // Проверяем совпадение contractId
+        if (!licenseNFT.isLicenseValid(tokenId)) {
+            revert LicenseNotValid(tokenId);
+        }
+
         bytes32 licContractId = licenseNFT.tokenContractId(tokenId);
-        if (licContractId != contractId) revert LicenseMismatch(contractId, licContractId);
 
-        // FIX 3: проверяем что лицензия ещё не использована
-        if (_licenseUsed[tokenId]) revert LicenseAlreadyUsed(tokenId);
+        if (licContractId != contractId) {
+            revert LicenseMismatch(contractId, licContractId);
+        }
+
+        if (_licenseUsed[tokenId]) {
+            revert LicenseAlreadyUsed(tokenId);
+        }
+
         _licenseUsed[tokenId] = true;
     }
 
     function _activeVersion(bytes32 contractId) internal view returns (uint256) {
         ImplVersion[] storage vers = _versions[contractId];
-        if (vers.length == 0) revert ImplementationNotFound();
-        for (uint256 i = vers.length; i > 0; --i) {
-            if (!vers[i - 1].deprecated) return i - 1;
+
+        if (vers.length == 0) {
+            revert ImplementationNotFound();
         }
+
+        for (uint256 i = vers.length; i > 0; --i) {
+            if (!vers[i - 1].deprecated) {
+                return i - 1;
+            }
+        }
+
         revert ImplementationNotFound();
     }
 
-    function _deploy(bytes32 contractId, uint256 version, uint256 licenseTokenId)
-        internal returns (address clone)
-    {
+    function _deploy(
+        bytes32 contractId,
+        uint256 version,
+        uint256 licenseTokenId
+    ) internal returns (address clone) {
         ImplVersion storage v = _versions[contractId][version];
+
         clone = v.addr.clone();
 
-        // FIX 2: корректная обработка initialize
-        (bool ok,) = clone.call(
+        (bool ok, ) = clone.call(
             abi.encodeWithSignature("initialize(address)", msg.sender)
         );
+
         if (!ok) {
-            // Если initialize существует но упал — revert
-            // Проверяем наличие селектора в bytecode через staticcall
-            (bool hasInit,) = clone.staticcall(
+            (bool hasInit, ) = clone.staticcall(
                 abi.encodeWithSignature("initialize(address)", msg.sender)
             );
-            // staticcall тоже упадёт если функция меняет стейт,
-            // но если вернул false — значит функция есть и упала
-            if (!hasInit) revert InitializationFailed();
-            // если hasInit = true — функция не существует, это нормально
+
+            if (!hasInit) {
+                revert InitializationFailed();
+            }
         }
 
         _instanceContractId[clone] = contractId;
@@ -216,7 +299,6 @@ contract ContractFactory is Ownable, IContractFactory {
 
         emit ContractDeployed(clone, contractId, msg.sender, version);
 
-        // licenseTokenId используется только для проверки — не храним
-        (licenseTokenId); // silence warning
+        licenseTokenId; // silence warning
     }
 }
