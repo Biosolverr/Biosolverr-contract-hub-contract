@@ -133,7 +133,7 @@ contract FullFlowTest is Test {
 
         vm.prank(buyer);
         vm.expectRevert(
-            abi.encodeWithSelector(ContractFactory.LicenseNotValid.selector, tid)
+           abi.encodeWithSelector(IContractFactory.LicenseNotValid.selector, tid)
         );
         f2.deployContract(CID, tid);
     }
