@@ -69,40 +69,54 @@ contract ContractFactoryTest is Test {
         assertTrue(factory.isLicenseUsed(tid));
     }
 
-    // ── License checks ────────────────────────────────────────────────────────
+// ── License checks ────────────────────────────────────────────────────────
 
-    function test_Revert_NotLicenseOwner() public {
-        uint256 tid = _mintLicense(user, 0);
-        vm.prank(makeAddr("hacker"));
-        vm.expectRevert(
-            abi.encodeWithSelector(ContractFactory.NotLicenseOwner.selector, tid)
-        );
-        factory.deployContract(CID, tid);
-    }
+function test_Revert_NotLicenseOwner() public {
+    uint256 tid = _mintLicense(user, 0);
 
-    function test_Revert_ExpiredLicense() public {
-        uint256 exp = block.timestamp + 1 days;
-        uint256 tid = nft.mintLicense(user, CID, "ipfs://t", exp);
-        vm.warp(block.timestamp + 2 days);
-        vm.prank(user);
-        vm.expectRevert(
-            abi.encodeWithSelector(ContractFactory.LicenseNotValid.selector, tid)
-        );
-        factory.deployContract(CID, tid);
-    }
+    vm.prank(makeAddr("hacker"));
+    vm.expectRevert(
+        abi.encodeWithSelector(
+            ContractFactory.NotLicenseOwner.selector,
+            tid
+        )
+    );
 
-    function test_Revert_WrongContractId() public {
-        bytes32 wrongCID = keccak256("WrongContract");
-        uint256 tid      = _mintLicense(user, 0);
-        vm.prank(user);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ContractFactory.LicenseMismatch.selector,
-                wrongCID, CID
-            )
-        );
-        factory.deployContract(wrongCID, tid);
-    }
+    factory.deployContract(CID, tid);
+}
+
+function test_Revert_ExpiredLicense() public {
+    uint256 exp = block.timestamp + 1 days;
+    uint256 tid = nft.mintLicense(user, CID, "ipfs://t", exp);
+
+    vm.warp(block.timestamp + 2 days);
+
+    vm.prank(user);
+    vm.expectRevert(
+        abi.encodeWithSelector(
+            bytes4(keccak256("LicenseNotValid(uint256)")),
+            tid
+        )
+    );
+
+    factory.deployContract(CID, tid);
+}
+
+function test_Revert_WrongContractId() public {
+    bytes32 wrongCID = keccak256("WrongContract");
+    uint256 tid = _mintLicense(user, 0);
+
+    vm.prank(user);
+    vm.expectRevert(
+        abi.encodeWithSelector(
+            ContractFactory.LicenseMismatch.selector,
+            CID,
+            wrongCID
+        )
+    );
+
+    factory.deployContract(wrongCID, tid);
+}
 
     // ── Versioning ────────────────────────────────────────────────────────────
 
