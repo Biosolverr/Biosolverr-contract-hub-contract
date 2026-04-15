@@ -151,7 +151,7 @@ contract FullFlowTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IContractFactory.LicenseNotValid.selector,
+                bytes4(keccak256("LicenseNotValid(uint256)"))
                 tid
             )
         );
