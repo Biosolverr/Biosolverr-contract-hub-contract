@@ -55,12 +55,18 @@ contract FullFlowTest is Test {
         token.mint(buyer, 1000 * 10 ** 6);
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // FULL ETH FLOW
+    // ─────────────────────────────────────────────────────────────
+
     function test_FullCycle_ETH() public {
         vm.prank(seller);
-        uint256 lid = marketplace.listContract(address(impl), PRICE, "ipfs://meta");
+        uint256 lid =
+            marketplace.listContract(address(impl), PRICE, "ipfs://meta");
 
         vm.prank(buyer);
-        uint256 tid = marketplace.purchaseLicense{value: PRICE}(lid);
+        uint256 tid =
+            marketplace.purchaseLicense{value: PRICE}(lid);
 
         assertEq(nft.ownerOf(tid), buyer);
         assertTrue(nft.isLicenseValid(tid));
@@ -95,6 +101,10 @@ contract FullFlowTest is Test {
         assertEq(MockImplementation(clone).owner(), buyer);
         assertTrue(MockImplementation(clone).ping());
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // ERC20 FLOW
+    // ─────────────────────────────────────────────────────────────
 
     function test_FullCycle_ERC20() public {
         vm.prank(author);
@@ -135,6 +145,10 @@ contract FullFlowTest is Test {
         assertEq(author.balance, before + MIN_DEPOSIT);
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // EXPIRY TEST
+    // ─────────────────────────────────────────────────────────────
+
     function test_LicenseExpiry_BlocksDeploy() public {
         LicenseNFT nft2 = new LicenseNFT();
         ContractFactory f2 = new ContractFactory(address(nft2));
@@ -143,7 +157,8 @@ contract FullFlowTest is Test {
 
         uint256 exp = block.timestamp + 1 days;
 
-        uint256 tid = nft2.mintLicense(buyer, CID, "ipfs://t", exp);
+        uint256 tid =
+            nft2.mintLicense(buyer, CID, "ipfs://t", exp);
 
         vm.warp(block.timestamp + 2 days);
 
@@ -151,7 +166,7 @@ contract FullFlowTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                bytes4(keccak256("LicenseNotValid(uint256)"))
+                bytes4(keccak256("LicenseNotValid(uint256)")),
                 tid
             )
         );
@@ -159,13 +174,18 @@ contract FullFlowTest is Test {
         f2.deployContract(CID, tid);
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // REVOKE TEST
+    // ─────────────────────────────────────────────────────────────
+
     function test_RevokedLicense_BlocksDeploy() public {
         LicenseNFT nft2 = new LicenseNFT();
         ContractFactory f2 = new ContractFactory(address(nft2));
 
         f2.registerImplementation(CID, address(impl), "v1.0");
 
-        uint256 tid = nft2.mintLicense(buyer, CID, "ipfs://t", 0);
+        uint256 tid =
+            nft2.mintLicense(buyer, CID, "ipfs://t", 0);
 
         nft2.revokeLicense(tid);
 
