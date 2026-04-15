@@ -7,6 +7,7 @@ import {ContractFactory} from "../../src/marketplace/ContractFactory.sol";
 import {ContractMarketplace} from "../../src/marketplace/ContractMarketplace.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {MockImplementation} from "../mocks/MockImplementation.sol";
+import {IContractFactory} from "../../src/interfaces/IContractFactory.sol";
 
 contract FullFlowTest is Test {
     LicenseNFT          nft;
@@ -49,35 +50,30 @@ contract FullFlowTest is Test {
     // ── Полный цикл: листинг → покупка → деплой ───────────────────────────────
 
     function test_FullCycle_ETH() public {
-        // 1. Seller листирует
         vm.prank(seller);
         uint256 lid = marketplace.listContract(address(impl), PRICE, "ipfs://meta");
 
-        // 2. Buyer покупает — авто-минт NFT
         vm.prank(buyer);
         uint256 tid = marketplace.purchaseLicense{value: PRICE}(lid);
         assertEq(nft.ownerOf(tid), buyer);
         assertTrue(nft.isLicenseValid(tid));
 
-        // 3. Seller выводит деньги
         uint256 fee    = (PRICE * PLATFORM_FEE) / 10_000;
         uint256 payout = PRICE - fee;
+
         uint256 before = seller.balance;
         vm.prank(seller);
         marketplace.withdrawEarnings();
         assertEq(seller.balance, before + payout);
 
-        // 4. Owner выводит комиссию
         uint256 ownerBefore = address(this).balance;
         marketplace.withdrawPlatformFees();
         assertEq(address(this).balance, ownerBefore + fee);
 
-        // 5. Buyer деплоит клон через factory
-        //    Нужна отдельная лицензия для factory (разные owner нет)
-        //    Создаём отдельный nft для factory тестов
         LicenseNFT nft2    = new LicenseNFT();
         ContractFactory f2 = new ContractFactory(address(nft2));
         f2.registerImplementation(CID, address(impl), "v1.0");
+
         uint256 factoryTid = nft2.mintLicense(buyer, CID, "ipfs://f", 0);
 
         vm.prank(buyer);
@@ -87,7 +83,6 @@ contract FullFlowTest is Test {
     }
 
     function test_FullCycle_ERC20() public {
-        // 1. Author регистрирует контракт
         vm.prank(author);
         marketplace.registerContract{value: MIN_DEPOSIT}(
             "TestContract", "TC", "1.0.0",
@@ -95,10 +90,8 @@ contract FullFlowTest is Test {
             100 * 10 ** 6
         );
 
-        // 2. Owner верифицирует
         marketplace.verifyContract(CID);
 
-        // 3. Buyer покупает лицензию
         vm.prank(buyer);
         token.approve(address(marketplace), 100 * 10 ** 6);
         vm.prank(buyer);
@@ -107,14 +100,13 @@ contract FullFlowTest is Test {
         assertEq(marketplace.reputation(author), 1);
         assertTrue(marketplace.hasPurchased(CID, buyer));
 
-        // 4. Buyer оценивает
         vm.prank(buyer);
         marketplace.rateContract(CID, 5);
         assertEq(marketplace.getAverageRating(CID), 5);
 
-        // 5. Author деактивирует и выводит депозит
         vm.prank(author);
         marketplace.toggleContractActive(CID);
+
         uint256 before = author.balance;
         vm.prank(author);
         marketplace.withdrawDeposit(CID);
@@ -133,7 +125,7 @@ contract FullFlowTest is Test {
 
         vm.prank(buyer);
         vm.expectRevert(
-           abi.encodeWithSelector(IContractFactory.LicenseNotValid.selector, tid)
+            abi.encodeWithSelector(IContractFactory.LicenseNotValid.selector, tid)
         );
         f2.deployContract(CID, tid);
     }
@@ -148,7 +140,7 @@ contract FullFlowTest is Test {
 
         vm.prank(buyer);
         vm.expectRevert(
-            abi.encodeWithSelector(ContractFactory.LicenseNotValid.selector, tid)
+            abi.encodeWithSelector(IContractFactory.LicenseNotValid.selector, tid)
         );
         f2.deployContract(CID, tid);
     }
