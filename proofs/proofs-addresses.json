@@ -1,12 +1,101 @@
-{
-  "sepolia": {
-    "LicenseNFT": "0x2E89f2bB5F55E5Cd326f4231348e0E0BAf4f3d67",
-    "ContractFactory": "0x5a27d7871d88A9958C280A6e1D8b5caAd6E6Ab4A",
-    "ContractMarketplace": "0xe9D002B89088b78E4CFAeE805BD57a8ad3B06ebE"
-  },
-  "mainnet": {
-    "LicenseNFT": "0xbEdebd1FA7838e94A1D6Da277814bbcF3412aeE0",
-    "ContractFactory": "0xD7802f37737556531371c2Ba43bc50e2E3853c51",
-    "ContractMarketplace": "0x4EfC1Ea958aF47E80B8aF9fD1a18f4d17b6D30F5"
-  }
-}
+[⠒] Compiling...
+No files changed, compilation skipped
+
+note[unaliased-plain-import]: use named imports '{A, B}' or alias 'import ".." as X'
+--> test/integration/FullFlow.t.sol:4:8
+|
+4 | import "forge-std/Test.sol";
+| ^^^^^^^^^^^^^^^^^^^^
+|
+= help: https://book.getfoundry.sh/reference/forge/forge-lint#unaliased-plain-import
+
+note[mixed-case-variable]: mutable variables should use mixedCase
+--> src/interfaces/ILicenseNFT.sol:29:25
+|
+29 | string calldata tokenURI_,
+| ^^^^^^^^^ help: consider using: tokenUri_
+|
+= help: https://book.getfoundry.sh/reference/forge/forge-lint#mixed-case-variable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+--> src/marketplace/ContractFactory.sol:29:34
+|
+29 | ILicenseNFT public immutable licenseNFT;
+| ^^^^^^^^^^ help: consider using: LICENSE_NFT
+|
+= help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+--> src/marketplace/LicenseNFT.sol:162:37
+|
+162 | _setDefaultRoyalty(owner(), uint96(basisPoints));
+| ^^^^^^^^^^^^^^^^^^^
+|
+= help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+text
+
+✅ Компиляция прошла успешно (предупреждения не блокируют сборку).
+
+---
+
+## 2. Тесты (`forge test --via-ir`)
+Ran 4 tests for test/unit/ContractFactory.t.sol:ContractFactoryTest
+[PASS] test_Revert_ExpiredLicense() (gas: 249138)
+[PASS] test_Revert_LicenseAlreadyUsed() (gas: 437524)
+[PASS] test_Revert_NotLicenseOwner() (gas: 228693)
+[PASS] test_Revert_WrongContractId() (gas: 229706)
+
+Ran 3 tests for test/integration/FullFlow.t.sol:FullFlowTest
+[PASS] test_FullCycle_ETH() (gas: 6438523)
+[PASS] test_LicenseExpiry_BlocksDeploy() (gas: 5858427)
+[PASS] test_RevokedLicense_BlocksDeploy() (gas: 5860319)
+
+Ran 3 tests for test/integration/Fuzz.t.sol:FuzzTest
+[PASS] testFuzz_OverpaymentRefunded(uint256,uint256) (runs: 256)
+[PASS] testFuzz_PlatformFeeNeverExceedsPrice(uint256,uint256) (runs: 256)
+[PASS] testFuzz_SellerPlusPlatformEqualsPrice(uint256) (runs: 256)
+
+✅ 10 тестов пройдено. 0 failed, 0 skipped.
+
+text
+
+---
+
+## 3. ABI контрактов (скопированы из `out/`)
+
+- `ContractMarketplace.json`
+- `LicenseNFT.json`
+- `ContractFactory.json`
+
+---
+
+## 4. Адреса развёрнутых контрактов
+
+### Base Sepolia (тестовая сеть)
+
+| Контракт | Адрес |
+|----------|-------|
+| LicenseNFT | `0x2E89f2bB5F55E5Cd326f4231348e0E0BAf4f3d67` |
+| ContractFactory | `0x5a27d7871d88A9958C280A6e1D8b5caAd6E6Ab4A` |
+| ContractMarketplace | `0xe9D002B89088b78E4CFAeE805BD57a8ad3B06ebE` |
+
+### Base Mainnet (основная сеть)
+
+| Контракт | Адрес |
+|----------|-------|
+| LicenseNFT | `0xbEdebd1FA7838e94A1D6Da277814bbcF3412aeE0` |
+| ContractFactory | `0xD7802f37737556531371c2Ba43bc50e2E3853c51` |
+| ContractMarketplace | `0x4EfC1Ea958aF47E80B8aF9fD1a18f4d17b6D30F5` |
+
+---
+
+## 5. Файлы в папке `proofs/`
+proofs/
+├── addresses.json
+├── ContractFactory.json
+├── ContractMarketplace.json
+├── LicenseNFT.json
+├── compilation.log
+├── deployment-sepolia.log
+├── test-output.log
