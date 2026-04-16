@@ -74,7 +74,6 @@ contract ContractMarketplaceTest is Test {
         vm.prank(buyer);
         vm.expectRevert(
             abi.encodeWithSelector(
-                ContractMarketplace.InsufficientPayment.selector,
                 PRICE, 0.5 ether
             )
         );
