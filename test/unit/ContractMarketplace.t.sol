@@ -178,7 +178,6 @@ contract ContractMarketplaceTest is Test {
         vm.prank(buyer);
         vm.expectRevert(
             abi.encodeWithSelector(
-                ContractMarketplace.AlreadyPurchased.selector, CID, buyer
             )
         );
         marketplace.purchaseLicense(CID);
