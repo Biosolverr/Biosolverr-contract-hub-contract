@@ -11,15 +11,7 @@ contract ContractFactory is Ownable, IContractFactory {
 
     // ─── Errors ───────────────────────────────────────────────────────────────
 
-    error LicenseNotValid(uint256 tokenId);
-    error LicenseAlreadyUsed(uint256 tokenId);
-    error NotLicenseOwner(uint256 tokenId);
-    error LicenseMismatch(bytes32 expected, bytes32 actual);
 
-    error ImplementationNotFound();
-    error InvalidImplementationAddress();
-    error ArrayLengthMismatch();
-    error InitializationFailed();
 
     // ─── Storage ──────────────────────────────────────────────────────────────
 
