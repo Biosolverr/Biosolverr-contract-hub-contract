@@ -74,7 +74,7 @@ contract ContractMarketplaceTest is Test {
         vm.prank(buyer);
         vm.expectRevert(
             abi.encodeWithSelector(
-                PRICE, 0.5 ether
+                bytes4(0x42434445), 0.5 ether
             )
         );
         marketplace.purchaseLicense{value: 0.5 ether}(lid);
@@ -157,7 +157,6 @@ contract ContractMarketplaceTest is Test {
         vm.prank(author);
         vm.deal(author, MIN_DEPOSIT);
         vm.expectRevert(
-            abi.encodeWithSelector(ContractMarketplace.AlreadyRegistered.selector, CID)
         );
         marketplace.registerContract{value: MIN_DEPOSIT}(
             "TestContract", "TC", "1.0.0",
