@@ -1,0 +1,12 @@
+{
+  "sepolia": {
+    "LicenseNFT": "0x2E89f2bB5F55E5Cd326f4231348e0E0BAf4f3d67",
+    "ContractFactory": "0x5a27d7871d88A9958C280A6e1D8b5caAd6E6Ab4A",
+    "ContractMarketplace": "0xe9D002B89088b78E4CFAeE805BD57a8ad3B06ebE"
+  },
+  "mainnet": {
+    "LicenseNFT": "0xbEdebd1FA7838e94A1D6Da277814bbcF3412aeE0",
+    "ContractFactory": "0xD7802f37737556531371c2Ba43bc50e2E3853c51",
+    "ContractMarketplace": "0x4EfC1Ea958aF47E80B8aF9fD1a18f4d17b6D30F5"
+  }
+}
